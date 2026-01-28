@@ -16,7 +16,7 @@ CONFIG = {
     "image_h": 64,
     "image_w": 800,
     "batch_size": 8,        
-    "num_epochs": 2,        
+    "num_epochs": 1,        
     "learning_rate": 0.0001,
     "log_interval": 1,
     "device": "cuda" if torch.cuda.is_available() else "cpu",

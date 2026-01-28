@@ -1,11 +1,10 @@
 /data*
 /data/
 /archive/
-/checkpoints/
-/logs/
 /__pycache__/
 *.pyc
 /.git/
 /.gradio/
 /.venv/
 /venv/
+todo.md
