@@ -44,7 +44,6 @@ class UkrainianOCRDataset(Dataset):
             image = Image.open(img_path).convert("L")
             if self.transform: image = self.transform(image)
         except:
-            # Uses CONFIG here as in original script
             image = torch.zeros(1, CONFIG['image_h'], CONFIG['image_w'])
             
         encoded_label = torch.tensor(self.text_to_labels(text_label), dtype=torch.long)

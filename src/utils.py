@@ -3,8 +3,6 @@ import torch
 import os
 
 def setup_logging(log_file):
-    """Sets up logging to both file and console."""
-    # Ensure directory exists
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     
     logger = logging.getLogger()
@@ -13,13 +11,11 @@ def setup_logging(log_file):
     if logger.hasHandlers():
         logger.handlers.clear()
 
-    # 1. File Handler
     file_handler = logging.FileHandler(log_file, mode='a')
     file_formatter = logging.Formatter('%(asctime)s | %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
-    # 2. Stream Handler
     console_handler = logging.StreamHandler()
     console_formatter = logging.Formatter('%(message)s')
     console_handler.setFormatter(console_formatter)

@@ -9,7 +9,6 @@ from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 import csv
 
-# Import modules
 from src.config import CONFIG
 from src.utils import setup_logging
 from src.dataset import UkrainianOCRDataset, collate_fn
@@ -28,24 +27,19 @@ def get_args():
     return parser.parse_args()
 
 def main():
-    # 1. Parse Arguments & Update Config
     args = get_args()
     model_name = args.model
     
-    # --- DYNAMIC CONFIG UPDATES ---
-    # Append model name to logs and checkpoints so they don't overwrite each other
     CONFIG['log_file'] = CONFIG['log_file'].parent / f"training_log_{model_name}.txt"
     CONFIG['csv_file'] = CONFIG['csv_file'].parent / f"training_metrics_{model_name}.csv"
     CONFIG['save_path'] = CONFIG['save_path'].parent / f"best_{model_name}.pth"
     CONFIG['log_dir'] = CONFIG['log_dir'].parent / f"runs_{model_name}"
     
-    # 2. Logging Setup
     logger = setup_logging(CONFIG['log_file'])
     logger.info(f"### Starting Training for Model: {model_name.upper()}")
     logger.info(f"### Configuration loaded. Device: {CONFIG['device']}")
     logger.info(f"### Logs will be saved to: {CONFIG['log_file']}")
 
-    # 3. Dataset & Transforms
     transform = transforms.Compose([
         transforms.Resize((CONFIG['image_h'], CONFIG['image_w'])), 
         transforms.ToTensor(),
@@ -54,7 +48,6 @@ def main():
     
     ds = UkrainianOCRDataset(CONFIG['metafile'], CONFIG['data_dir'], CONFIG['alphabet'], transform)
     
-    # 4. Splits (70/15/15)
     total_len = len(ds)
     train_len = int(0.7 * total_len)
     val_len = int(0.15 * total_len)
@@ -66,7 +59,6 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=CONFIG['batch_size'], shuffle=False, collate_fn=collate_fn)
     test_loader = DataLoader(test_ds, batch_size=CONFIG['batch_size'], shuffle=False, collate_fn=collate_fn)
 
-    # 5. CSV Init
     if not os.path.exists(CONFIG['csv_file']):
         with open(CONFIG['csv_file'], mode='w', newline='') as f:
             csv_writer = csv.writer(f)
@@ -75,13 +67,11 @@ def main():
     else:
         logger.info(f"### Found existing metrics CSV, appending new data.")
 
-    # 6. Model Selection logic
     logger.info(f"### Initializing {model_name.upper()} Model...")
     if model_name == "crnn":
         model = OCR_CRNN(ds.vocab_size).to(CONFIG['device'])
     else:
         model = OCR_SimpleCNN(ds.vocab_size).to(CONFIG['device'])
-
 
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -89,10 +79,41 @@ def main():
     logger.info(f"### Total Parameters: {total_params:,}")
     logger.info(f"### Trainable Parameters: {trainable_params:,}")
     
-    # 7. Checkpoints & Optimization
+    # Overfitting 1 Batch 
+    logger.info("\n### STARTING SANITY CHECK: Overfitting 1 Batch...")
+    
+    batch = next(iter(train_loader)) 
+    images, targets, target_lengths = batch
+    
+    images = images.to(CONFIG['device'])
+    targets = targets.to(CONFIG['device'])
+    target_lengths = target_lengths.to(CONFIG['device'])
+    
+    if model_name == "crnn":
+        sanity_model = OCR_CRNN(ds.vocab_size).to(CONFIG['device'])
+    else:
+        sanity_model = OCR_SimpleCNN(ds.vocab_size).to(CONFIG['device'])
+        
+    sanity_optim = optim.Adam(sanity_model.parameters(), lr=0.001)
+    sanity_criterion = nn.CTCLoss(blank=0, zero_infinity=True)
+
+    for k in range(50):
+        sanity_optim.zero_grad()
+        preds = sanity_model(images)
+        input_lengths = torch.full(size=(images.size(0),), fill_value=preds.size(1), dtype=torch.long)
+        
+        loss = sanity_criterion(preds.permute(1, 0, 2), targets, input_lengths, target_lengths)
+        loss.backward()
+        sanity_optim.step()
+        
+        if k % 10 == 0:
+            logger.info(f"   Sanity Epoch {k}/50 | Loss: {loss.item():.4f}")
+            
+    logger.info(f"### Sanity Check Complete (Final Loss: {loss.item():.4f})\n")
+  
+
     CONFIG['save_path'].parent.mkdir(parents=True, exist_ok=True)
     
-    # Use a generic 'latest' file per model
     LATEST_PATH = f"checkpoints/latest_{model_name}.pth"
     
     if os.path.exists(LATEST_PATH):
@@ -109,7 +130,6 @@ def main():
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
     
-    # 8. Main Training Loop
     writer = SummaryWriter(CONFIG['log_dir'])
     best_cer = float('inf')
     
@@ -127,7 +147,6 @@ def main():
 
         scheduler.step(val_loss)
 
-        # CSV Logging
         current_lr = optimizer.param_groups[0]['lr']
         with open(CONFIG['csv_file'], mode='a', newline='') as f:
             csv_writer = csv.writer(f)
@@ -142,7 +161,6 @@ def main():
             ])
         logger.info(f"### Metrics saved to {CONFIG['csv_file']}")
 
-        # Checkpointing
         if val_cer < best_cer:
             best_cer = val_cer
             torch.save(model.state_dict(), CONFIG['save_path'])
@@ -153,7 +171,6 @@ def main():
     writer.close()
     logger.info("### Training Complete.")
 
-    # 9. Final Test Evaluation
     logger.info("\n### RELOADING BEST MODEL FOR TEST EVALUATION...")
     if CONFIG['save_path'].exists():
         model.load_state_dict(torch.load(CONFIG['save_path'], map_location=CONFIG['device']))

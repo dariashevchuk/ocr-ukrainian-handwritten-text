@@ -42,7 +42,7 @@ class OCR_SimpleCNN(nn.Module):
     def __init__(self, vocab_size, hidden_size=256):
         super(OCR_SimpleCNN, self).__init__()
         
-        # Custom "Own Architecture" Feature Extractor
+        # Custom Feature Extractor
         self.features = nn.Sequential(
             # Block 1
             nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1),
