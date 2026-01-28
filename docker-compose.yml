@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: ocr_app
+    command: python app.py
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./data_padded:/app/data_padded
+      - ./checkpoints:/app/checkpoints
+      - ./logs:/app/logs
+    environment:
+      - GRADIO_SERVER_NAME=0.0.0.0
+
+  train:
+    build: .
+    container_name: ocr_trainer
+    command: python train.py --model crnn
+    volumes:
+      - ./data_padded:/app/data_padded
+      - ./checkpoints:/app/checkpoints
+      - ./logs:/app/logs
