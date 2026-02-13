@@ -1,5 +1,7 @@
 # Project 3: Handwritten Text Recognition (OCR)
 
+## Check out the full report: [link](https://drive.google.com/file/d/1HoJyBlUIDVkOIFVFfwaYn1Ct5odT4k5D/view?usp=sharing)
+
 This project implements an Optical Character Recognition (OCR) system for handwritten text using PyTorch. It features two distinct neural network architectures, a complete training pipeline with logging, and a web-based GUI for inference. Dataset used:  https://www.kaggle.com/datasets/annyhnatiuk/ukrainian-handwritten-text
 
 ## Project Overview
