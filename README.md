@@ -63,3 +63,36 @@ Checkpoints: Best models are automatically saved to checkpoints/.
 The models are evaluated using:
 CER (Character Error Rate): Levenshtein distance between predicted and target characters.
 WER (Word Error Rate): Percentage of incorrectly predicted words.
+
+## Architecture Comparison
+
+| Metric          | SimpleCNN (Custom) | CRNN (ResNet18) |
+|----------------|--------------------:|----------------:|
+| Parameters     | 4.2 Million         | 12.8 Million    |
+| Weight Size    | ~16.8 MB            | ~51.1 MB        |
+| Compute Cost   | 4.34 GMacs          | 13.36 GMacs     |
+| Output Sequence| 200 steps           | 400 steps       |
+
+## Results and Evaluation
+
+| Feature          | SimpleCNN (Model B) | CRNN ResNet18 (Model A) |
+|-----------------|--------------------:|------------------------:|
+| Best Val CER    | 18.51%              | 10.90% (Winner)         |
+| Best Val WER    | 61.74%              | 42.21%                  |
+| Training Time   | ~1.6h               | ~2.8h                   |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
